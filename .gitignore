@@ -1,0 +1,22 @@
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# wiem ze zbrodnia ale bedzie wam latwiej
+!cpm_solver.exe
+
+.idea/
+.vscode/
+*.swp
+*.swo
+
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+/vendor/
