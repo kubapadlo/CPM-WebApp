@@ -10,16 +10,16 @@
 
   let inputData = $state([
     { _key: generateKey(), id: "A", duration: 3, predecessors: "" },
-    // { _key: generateKey(), id: "B", duration: 5, predecessors: "A" },
-    // { _key: generateKey(), id: "C", duration: 2, predecessors: "A" },
-    // { _key: generateKey(), id: "D", duration: 4, predecessors: "B" },
-    // { _key: generateKey(), id: "E", duration: 6, predecessors: "C" },
-    // { _key: generateKey(), id: "F", duration: 3, predecessors: "B" },
-    // { _key: generateKey(), id: "G", duration: 5, predecessors: "D, E" },
-    // { _key: generateKey(), id: "H", duration: 2, predecessors: "F" },
-    // { _key: generateKey(), id: "I", duration: 4, predecessors: "G, H" },
-    // { _key: generateKey(), id: "J", duration: 3, predecessors: "I" },
-    // { _key: generateKey(), id: "K", duration: 2, predecessors: "J" }
+    { _key: generateKey(), id: "B", duration: 5, predecessors: "A" },
+    { _key: generateKey(), id: "C", duration: 2, predecessors: "A" },
+    { _key: generateKey(), id: "D", duration: 4, predecessors: "B" },
+    { _key: generateKey(), id: "E", duration: 6, predecessors: "C" },
+    { _key: generateKey(), id: "F", duration: 3, predecessors: "B" },
+    { _key: generateKey(), id: "G", duration: 5, predecessors: "D, E" },
+    { _key: generateKey(), id: "H", duration: 2, predecessors: "F" },
+    { _key: generateKey(), id: "I", duration: 4, predecessors: "G, H" },
+    { _key: generateKey(), id: "J", duration: 3, predecessors: "I" },
+    { _key: generateKey(), id: "K", duration: 2, predecessors: "J" }
   ]);
 
   function addRow() {
@@ -61,9 +61,9 @@
 </script>
 
 <div class="layout">
+    <a class="btn-add" href="/event">Przełącz na zdarzeniowy</a>
   <div class="card form-section">
-    <h2>Dane projektu</h2>
-    
+    <h2>Wariant czynnościowy</h2>
     <div class="table-header">
       <span>Zadanie</span>
       <span>Czas trwania</span>

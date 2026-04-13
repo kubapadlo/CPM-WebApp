@@ -34,8 +34,25 @@
       container: container,
       elements: elements,
       style: [
-        { selector: 'node', style: { 'label': 'data(label)', 'text-wrap': 'wrap', 'text-valign': 'center', 'background-color': '#fff', 'border-width': 2, 'border-color': '#333', 'shape': 'rectangle', 'padding': '10px', 'width': 'label', 'height': 'label' }},
-        { selector: 'edge', style: { 'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'width': 2, 'line-color': '#ccc' }},
+        { selector: 'node', 
+        style: { 
+          'label': 'data(label)', 
+          'text-wrap': 'wrap', 
+          'text-valign': 'center', 
+          'background-color': '#fff', 
+          'border-width': 2, 
+          'border-color': '#333', 
+          'shape': 'rectangle', 
+          'padding': '10px', 
+          'width': 'label', 
+          'height': 'label' }},
+        { 
+        selector: 'edge',
+          style: { 
+            'curve-style': 'bezier', 
+            'target-arrow-shape': 'triangle', 
+            'width': 2, 
+            'line-color': '#ccc' }},
         { selector: '[?isCritical]', style: { 'background-color': '#ff4d4f', 'color': '#fff' }}
       ],
       layout: { name: 'dagre', rankDir: 'LR' }
