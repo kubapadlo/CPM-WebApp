@@ -1,5 +1,10 @@
 <script>
+  import html2canvas from "html2canvas";
+  import { createEventDispatcher } from "svelte";
+
   let { activities = [] } = $props();
+
+  const dispatch = createEventDispatcher();
 
   /**
    * @param {any} item
@@ -117,9 +122,31 @@
 
   const timeLabels = $derived(() => generateTimeLabels(maxEnd()));
   const chartWidth = $derived(() => (maxEnd() + 1) * timeScale);
+
+  let ganttContainer;
+  let exportFunction = exportPNG;
+
+  function exportPNG() {
+    if (ganttContainer) {
+      html2canvas(ganttContainer, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+      })
+        .then((canvas) => {
+          const dataUrl = canvas.toDataURL("image/png");
+          dispatch("export", { dataUrl, filename: "gantt.png" });
+        })
+        .catch((err) => {
+          console.error("Błąd eksportu PNG:", err);
+          alert("Wystąpił błąd podczas eksportu wykresu.");
+        });
+    }
+  }
 </script>
 
-<div class="gantt">
+<div class="gantt" bind:this={ganttContainer}>
   <div class="gantt-grid" style="position: relative;">
     <!-- Oś czasu z etykietami co trzecią jednostkę -->
     <div class="time-axis">

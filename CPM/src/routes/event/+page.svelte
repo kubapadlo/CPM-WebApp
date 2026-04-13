@@ -5,6 +5,16 @@
   let networkData = $state({ events: [], activities: [] });
   let loading = $state(false);
 
+  let graphEventComponent;
+  let ganttEventComponent;
+
+  function handleExport(dataUrl, filename) {
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = filename;
+    link.click();
+  }
+
   function generateKey() {
     return Math.random().toString(36).substr(2, 9);
   }
@@ -89,6 +99,131 @@
     } finally {
       loading = false;
     }
+  }
+
+  function exportToCSV() {
+    const escapeCSV = (value) => {
+      value = String(value || "");
+      if (value.includes(",") || value.includes('"')) {
+        return '"' + value.replace(/"/g, '""') + '"';
+      }
+      return value;
+    };
+
+    const headers = ["ID", "From Node", "To Node", "Duration"];
+    const rows = inputData.map((row) => [
+      escapeCSV(row.id),
+      escapeCSV(row.from_node),
+      escapeCSV(row.to_node),
+      escapeCSV(row.duration),
+    ]);
+    const csvContent = [headers, ...rows]
+      .map((row) => row.join(","))
+      .join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "event_tasks.csv";
+    link.click();
+  }
+
+  function importFromCSV(event) {
+    const parseCSVLine = (line) => {
+      const result = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++; // skip next quote
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === "," && !inQuotes) {
+          result.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    };
+
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const lines = text.trim().split("\n");
+      if (lines.length < 2) {
+        alert(
+          "Plik CSV musi zawierać co najmniej nagłówek i jeden wiersz danych.",
+        );
+        return;
+      }
+
+      const headers = parseCSVLine(lines[0]).map((h) => h.trim());
+      const expectedHeaders = ["ID", "From Node", "To Node", "Duration"];
+      if (
+        headers.length !== 4 ||
+        !headers.every((h, i) => h === expectedHeaders[i])
+      ) {
+        alert(
+          "Nieprawidłowy format pliku CSV. Oczekiwane nagłówki: ID,From Node,To Node,Duration",
+        );
+        return;
+      }
+
+      const parsedData = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        if (cols.length !== 4) {
+          alert(`Wiersz ${i + 1}: Nieprawidłowa liczba kolumn. Oczekiwane 4.`);
+          return;
+        }
+        const id = cols[0].trim();
+        const fromNode = cols[1].trim();
+        const toNode = cols[2].trim();
+        const durationStr = cols[3].trim();
+
+        if (!id) {
+          alert(`Wiersz ${i + 1}: ID zadania nie może być puste.`);
+          return;
+        }
+        if (!fromNode || isNaN(parseInt(fromNode, 10))) {
+          alert(`Wiersz ${i + 1}: Węzeł początkowy musi być liczbą całkowitą.`);
+          return;
+        }
+        if (!toNode || isNaN(parseInt(toNode, 10))) {
+          alert(`Wiersz ${i + 1}: Węzeł końcowy musi być liczbą całkowitą.`);
+          return;
+        }
+        const duration = parseInt(durationStr, 10);
+        if (isNaN(duration) || duration <= 0) {
+          alert(
+            `Wiersz ${i + 1}: Czas trwania musi być dodatnią liczbą całkowitą.`,
+          );
+          return;
+        }
+
+        parsedData.push({
+          _key: generateKey(),
+          id,
+          from_node: fromNode,
+          to_node: toNode,
+          duration: durationStr,
+        });
+      }
+
+      inputData = parsedData;
+      networkData = { events: [], activities: [] }; // Wyczyść poprzednie wyniki obliczeń
+      alert("Dane zostały pomyślnie zaimportowane.");
+    };
+    reader.readAsText(file);
   }
 
   /**
@@ -179,6 +314,16 @@
 
     <div class="form-actions">
       <button class="btn-add" onclick={addRow}>+ Dodaj czynność</button>
+      <label class="btn-import">
+        Importuj z CSV
+        <input
+          type="file"
+          accept=".csv"
+          onchange={importFromCSV}
+          style="display: none;"
+        />
+      </label>
+      <button class="btn-export" onclick={exportToCSV}>Eksportuj do CSV</button>
       <button class="btn-submit" onclick={fetchActivities} disabled={loading}>
         {loading ? "Obliczanie..." : "Oblicz ścieżkę krytyczną"}
       </button>
@@ -187,14 +332,36 @@
 
   {#if networkData.events.length > 0}
     <div class="card">
-      <h2>Graf</h2>
-      <GraphEvent {networkData} />
+      <div class="card-header">
+        <h2>Graf</h2>
+        <button
+          class="btn-png"
+          onclick={() => graphEventComponent?.exportPNG()}
+          title="Eksportuj wykres do PNG">📷 PNG</button
+        >
+      </div>
+      <GraphEvent
+        bind:this={graphEventComponent}
+        {networkData}
+        exportFunction={handleExport}
+      />
     </div>
 
     {#if ganttTasks().length > 0}
       <div class="card">
-        <h2>Wykres Gantta</h2>
-        <Gantt activities={ganttTasks()} />
+        <div class="card-header">
+          <h2>Wykres Gantta</h2>
+          <button
+            class="btn-png"
+            onclick={() => ganttEventComponent?.exportPNG()}
+            title="Eksportuj wykres Gantta do PNG">📷 PNG</button
+          >
+        </div>
+        <Gantt
+          bind:this={ganttEventComponent}
+          activities={ganttTasks()}
+          exportFunction={handleExport}
+        />
       </div>
     {/if}
   {/if}
@@ -224,6 +391,24 @@
     border-bottom: 2px solid #f1f5f9;
     padding-bottom: 12px;
     margin-bottom: 20px;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .btn-png {
+    background: #10b981;
+    color: white;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .btn-png:hover {
+    background: #059669;
   }
   .table-header,
   .table-row {
@@ -288,6 +473,27 @@
   }
   .btn-add:hover {
     background: #e2e8f0;
+  }
+  .btn-import {
+    background: #f59e0b;
+    color: white;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .btn-import:hover {
+    background: #d97706;
+  }
+  .btn-export {
+    background: #10b981;
+    color: white;
+    padding: 10px 16px;
+  }
+  .btn-export:hover {
+    background: #059669;
   }
   .btn-submit {
     background: #3b82f6;

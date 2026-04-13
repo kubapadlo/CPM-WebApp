@@ -5,6 +5,17 @@
   let activities = $state([]);
   let loading = $state(false);
 
+  let graphComponent;
+  let ganttComponent;
+
+  function handleExport(event) {
+    const { dataUrl, filename } = event.detail;
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = filename;
+    link.click();
+  }
+
   function generateKey() {
     return Math.random().toString(36).substr(2, 9);
   }
@@ -64,6 +75,120 @@
       loading = false;
     }
   }
+
+  function exportToCSV() {
+    const escapeCSV = (value) => {
+      value = String(value || "");
+      if (value.includes(",") || value.includes('"')) {
+        return '"' + value.replace(/"/g, '""') + '"';
+      }
+      return value;
+    };
+
+    const headers = ["ID", "Duration", "Predecessors"];
+    const rows = inputData.map((row) => [
+      escapeCSV(row.id),
+      escapeCSV(row.duration),
+      escapeCSV(row.predecessors),
+    ]);
+    const csvContent = [headers, ...rows]
+      .map((row) => row.join(","))
+      .join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "tasks.csv";
+    link.click();
+  }
+
+  function importFromCSV(event) {
+    const parseCSVLine = (line) => {
+      const result = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++; // skip next quote
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === "," && !inQuotes) {
+          result.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    };
+
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const lines = text.trim().split("\n");
+      if (lines.length < 2) {
+        alert(
+          "Plik CSV musi zawierać co najmniej nagłówek i jeden wiersz danych.",
+        );
+        return;
+      }
+
+      const headers = parseCSVLine(lines[0]).map((h) => h.trim());
+      const expectedHeaders = ["ID", "Duration", "Predecessors"];
+      if (
+        headers.length !== 3 ||
+        !headers.every((h, i) => h === expectedHeaders[i])
+      ) {
+        alert(
+          "Nieprawidłowy format pliku CSV. Oczekiwane nagłówki: ID,Duration,Predecessors",
+        );
+        return;
+      }
+
+      const parsedData = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        if (cols.length !== 3) {
+          alert(`Wiersz ${i + 1}: Nieprawidłowa liczba kolumn. Oczekiwane 3.`);
+          return;
+        }
+        const id = cols[0].trim();
+        const durationStr = cols[1].trim();
+        const predecessors = cols[2].trim();
+
+        if (!id) {
+          alert(`Wiersz ${i + 1}: ID zadania nie może być puste.`);
+          return;
+        }
+        const duration = parseInt(durationStr, 10);
+        if (isNaN(duration) || duration <= 0) {
+          alert(
+            `Wiersz ${i + 1}: Czas trwania musi być dodatnią liczbą całkowitą.`,
+          );
+          return;
+        }
+
+        parsedData.push({
+          _key: generateKey(),
+          id,
+          duration,
+          predecessors,
+        });
+      }
+
+      inputData = parsedData;
+      activities = []; // Wyczyść poprzednie wyniki obliczeń
+      alert("Dane zostały pomyślnie zaimportowane.");
+    };
+    reader.readAsText(file);
+  }
 </script>
 
 <div class="layout">
@@ -109,6 +234,16 @@
 
     <div class="form-actions">
       <button class="btn-add" onclick={addRow}>+ Dodaj kolejne zadanie</button>
+      <label class="btn-import">
+        Importuj z CSV
+        <input
+          type="file"
+          accept=".csv"
+          onchange={importFromCSV}
+          style="display: none;"
+        />
+      </label>
+      <button class="btn-export" onclick={exportToCSV}>Eksportuj do CSV</button>
       <button class="btn-submit" onclick={fetchActivities} disabled={loading}>
         {loading ? "Obliczanie..." : "Oblicz ścieżkę krytyczną"}
       </button>
@@ -117,13 +252,27 @@
 
   {#if activities.length > 0}
     <div class="card">
-      <h2>Graf</h2>
-      <Graph {activities} />
+      <div class="card-header">
+        <h2>Graf</h2>
+        <button
+          class="btn-png"
+          onclick={() => graphComponent?.()}
+          title="Eksportuj wykres do PNG">📷 PNG</button
+        >
+      </div>
+      <Graph bind:exportFunction={graphComponent} {activities} />
     </div>
 
     <div class="card">
-      <h2>Wykres Gantta</h2>
-      <Gantt {activities} />
+      <div class="card-header">
+        <h2>Wykres Gantta</h2>
+        <button
+          class="btn-png"
+          onclick={() => ganttComponent?.()}
+          title="Eksportuj wykres Gantta do PNG">📷 PNG</button
+        >
+      </div>
+      <Gantt bind:exportFunction={ganttComponent} {activities} />
     </div>
   {/if}
 </div>
@@ -214,6 +363,24 @@
     background: #fca5a5;
   }
 
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .btn-png {
+    background: #10b981;
+    color: white;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .btn-png:hover {
+    background: #059669;
+  }
+
   .form-actions {
     display: flex;
     justify-content: space-between;
@@ -230,6 +397,31 @@
 
   .btn-add:hover {
     background: #e2e8f0;
+  }
+
+  .btn-export {
+    background: #10b981;
+    color: white;
+    padding: 10px 16px;
+  }
+
+  .btn-export:hover {
+    background: #059669;
+  }
+
+  .btn-import {
+    background: #f59e0b;
+    color: white;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .btn-import:hover {
+    background: #d97706;
   }
 
   .btn-submit {
