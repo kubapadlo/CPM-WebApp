@@ -105,20 +105,63 @@
     tasks().length ? Math.max(...tasks().map((task) => task.end)) : 0,
   );
   const timeScale = 40;
+
+  /** @param {number} max */
+  function generateTimeLabels(max) {
+    const labels = [];
+    for (let i = 0; i <= max; i++) {
+      labels.push(i);
+    }
+    return labels;
+  }
+
+  const timeLabels = $derived(() => generateTimeLabels(maxEnd()));
+  const chartWidth = $derived(() => (maxEnd() + 1) * timeScale);
 </script>
 
 <div class="gantt">
-  <div class="gantt-grid">
+  <div class="gantt-grid" style="position: relative;">
+    <!-- Oś czasu z etykietami co trzecią jednostkę -->
+    <div class="time-axis">
+      {#each timeLabels() as label}
+        <div
+          class="time-label"
+          class:first={label === 0}
+          style="left: {label * timeScale}px"
+        >
+          {label}
+        </div>
+      {/each}
+    </div>
+
+    <!-- Linie pionowe dla każdej etykiety czasu -->
+    <svg
+      class="time-lines"
+      width={chartWidth()}
+      height="100%"
+      style="position: absolute; top: 0; left: 0; pointer-events: none;"
+    >
+      {#each timeLabels() as label}
+        <line
+          x1={label * timeScale}
+          y1="30"
+          x2={label * timeScale}
+          y2="100%"
+          stroke="#64748b"
+          stroke-width="1"
+          stroke-dasharray="2,2"
+        />
+      {/each}
+    </svg>
+
     {#each tasks() as task}
       <div class="task-row">
-        <div
-          class="task-bar-wrapper"
-          style="min-width: {(maxEnd() + 1) * timeScale}px"
-        >
+        <div class="task-bar-wrapper" style="min-width: {chartWidth()}px">
           <div
             class="task-bar {task.isCritical ? 'critical' : ''}"
             style="left: {task.start * timeScale}px; width: {task.duration *
-              timeScale}px"
+              timeScale -
+              24}px"
             title="{task.id} — start: {task.start}, czas: {task.duration}, koniec: {task.end}"
           >
             {task.id}
@@ -138,6 +181,36 @@
 
   .gantt-grid {
     overflow-x: auto;
+    position: relative;
+  }
+
+  .time-axis {
+    position: relative;
+    height: 30px;
+    margin-bottom: 8px;
+  }
+
+  .time-label {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    background: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+
+  .time-label.first {
+    transform: none;
+    left: 0 !important;
+  }
+
+  .time-lines {
+    z-index: 1;
   }
 
   .task-row {

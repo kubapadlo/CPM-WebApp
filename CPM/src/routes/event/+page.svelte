@@ -102,11 +102,26 @@
       ),
     );
 
+    const predecessorsByNode = data.activities.reduce(
+      /**
+       * @param {Map<string, string[]>} map
+       * @param {any} act
+       */
+      (map, act) => {
+        const node = String(act.to_node);
+        const previous = map.get(node) ?? [];
+        map.set(node, [...previous, act.id]);
+        return map;
+      },
+      new Map(),
+    );
+
     return data.activities.map(
       /** @param {any} act */ (act) => ({
         id: act.id,
         duration: Number(act.duration) || 0,
         start: etByNode.get(String(act.from_node)) ?? 0,
+        predecessors: predecessorsByNode.get(String(act.from_node)) ?? [],
         isCritical: act.is_critical ?? act.isCritical ?? false,
       }),
     );
