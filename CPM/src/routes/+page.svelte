@@ -1,5 +1,6 @@
 <script>
-  import Graph from '$lib/components/Graph.svelte';
+  import Graph from "$lib/components/Graph.svelte";
+  import Gantt from "$lib/components/Gantt.svelte";
 
   let activities = $state([]);
   let loading = $state(false);
@@ -19,11 +20,16 @@
     { _key: generateKey(), id: "H", duration: 2, predecessors: "F" },
     { _key: generateKey(), id: "I", duration: 4, predecessors: "G, H" },
     { _key: generateKey(), id: "J", duration: 3, predecessors: "I" },
-    { _key: generateKey(), id: "K", duration: 2, predecessors: "J" }
+    { _key: generateKey(), id: "K", duration: 2, predecessors: "J" },
   ]);
 
   function addRow() {
-    inputData.push({ _key: generateKey(), id: "", duration: 1, predecessors: "" });
+    inputData.push({
+      _key: generateKey(),
+      id: "",
+      duration: 1,
+      predecessors: "",
+    });
   }
 
   function removeRow(index) {
@@ -34,21 +40,21 @@
     loading = true;
 
     const payload = inputData
-      .filter(row => row.id.trim() !== '')
-      .map(row => ({
+      .filter((row) => row.id.trim() !== "")
+      .map((row) => ({
         id: row.id.trim(),
         duration: Number(row.duration) || 0,
         predecessors: row.predecessors
-          .split(',')
-          .map(p => p.trim())
-          .filter(p => p !== '') 
+          .split(",")
+          .map((p) => p.trim())
+          .filter((p) => p !== ""),
       }));
 
     try {
-      const response = await fetch('http://localhost:8080/activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      const response = await fetch("http://localhost:8080/activity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
       activities = await response.json();
     } catch (e) {
@@ -61,7 +67,7 @@
 </script>
 
 <div class="layout">
-    <a class="btn-add" href="/event">Przełącz na zdarzeniowy</a>
+  <a class="btn-add" href="/event">Przełącz na zdarzeniowy</a>
   <div class="card form-section">
     <h2>Wariant czynnościowy</h2>
     <div class="table-header">
@@ -73,10 +79,29 @@
 
     {#each inputData as row, index (row._key)}
       <div class="table-row">
-        <input type="text" bind:value={row.id} placeholder="np. A" class="input-field" />
-        <input type="number" bind:value={row.duration} min="1" class="input-field" />
-        <input type="text" bind:value={row.predecessors} placeholder="np. A, B" class="input-field" />
-        <button class="btn-remove" onclick={() => removeRow(index)} aria-label="Usuń wiersz">
+        <input
+          type="text"
+          bind:value={row.id}
+          placeholder="np. A"
+          class="input-field"
+        />
+        <input
+          type="number"
+          bind:value={row.duration}
+          min="1"
+          class="input-field"
+        />
+        <input
+          type="text"
+          bind:value={row.predecessors}
+          placeholder="np. A, B"
+          class="input-field"
+        />
+        <button
+          class="btn-remove"
+          onclick={() => removeRow(index)}
+          aria-label="Usuń wiersz"
+        >
           ✖
         </button>
       </div>
@@ -85,7 +110,7 @@
     <div class="form-actions">
       <button class="btn-add" onclick={addRow}>+ Dodaj kolejne zadanie</button>
       <button class="btn-submit" onclick={fetchActivities} disabled={loading}>
-        {loading ? 'Obliczanie...' : 'Oblicz ścieżkę krytyczną'}
+        {loading ? "Obliczanie..." : "Oblicz ścieżkę krytyczną"}
       </button>
     </div>
   </div>
@@ -94,7 +119,11 @@
     <div class="card">
       <h2>Graf</h2>
       <Graph {activities} />
-      
+    </div>
+
+    <div class="card">
+      <h2>Wykres Gantta</h2>
+      <Gantt {activities} />
     </div>
   {/if}
 </div>
@@ -127,7 +156,8 @@
     margin-bottom: 20px;
   }
 
-  .table-header, .table-row {
+  .table-header,
+  .table-row {
     display: grid;
     grid-template-columns: 1fr 1fr 2fr 50px;
     gap: 12px;
@@ -217,7 +247,7 @@
     opacity: 0.7;
     cursor: not-allowed;
   }
-  
+
   pre {
     background: #f8fafc;
     padding: 16px;
