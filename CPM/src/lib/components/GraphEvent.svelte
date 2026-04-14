@@ -1,15 +1,12 @@
 <script>
-  import { onMount } from "svelte";
   import cytoscape from "cytoscape";
   // @ts-ignore
   import dagre from "cytoscape-dagre";
-  import { createEventDispatcher } from "svelte";
 
   let { networkData = { events: [], activities: [] } } = $props();
 
   let container;
   let cy;
-  const dispatch = createEventDispatcher();
 
   $effect(() => {
     if (
@@ -26,25 +23,20 @@
 
     const elements = [];
 
-    // Dodajemy zdarzenia (WĘZŁY / KÓŁKA)
     networkData.events.forEach((ev) => {
       elements.push({
         data: {
-          // Cytoscape WYMAGA stringów dla id, więc zamieniamy liczbę na tekst
           id: ev.node.toString(),
-          // Używamy ET i LT zgodnie z backendem
           label: `${ev.node}\n──────\nET: ${ev.et.toString().padEnd(2)}\nLT: ${ev.lt.toString().padEnd(2)}`,
           isCritical: ev.is_critical,
         },
       });
     });
 
-    // Dodajemy czynności (KRAWĘDZIE / STRZAŁKI)
     networkData.activities.forEach((act) => {
       elements.push({
         data: {
           id: act.id,
-          // Łączymy strzałkę po numerach zdarzeń (również zamienionych na tekst)
           source: act.from_node.toString(),
           target: act.to_node.toString(),
           label: `${act.id}, Czas: ${act.duration}`,
@@ -98,16 +90,57 @@
   }
 
   function exportPNG() {
-    if (cy && exportFunction) {
+    if (cy) {
       const pngData = cy.png({ full: true, scale: 2 });
-      exportFunction(pngData, "graph_event.png");
+      const link = document.createElement("a");
+      link.href = pngData;
+      link.download = "graph_event.png";
+      link.click();
     }
   }
 </script>
 
-<div bind:this={container} class="graph-container"></div>
+<div class="graph-wrapper">
+  <div class="graph-header">
+    <h3>Graf zdarzeniowy</h3>
+    <button class="btn-png" onclick={exportPNG} title="Eksportuj wykres do PNG"
+      >📷 PNG</button
+    >
+  </div>
+  <div bind:this={container} class="graph-container"></div>
+</div>
 
 <style>
+  .graph-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .graph-header h3 {
+    margin: 0;
+  }
+
+  .btn-png {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .btn-png:hover {
+    background: #2563eb;
+  }
+
   .graph-container {
     width: 100%;
     height: 500px;

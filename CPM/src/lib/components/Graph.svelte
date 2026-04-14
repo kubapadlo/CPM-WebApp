@@ -3,14 +3,11 @@
   import cytoscape from "cytoscape";
   // @ts-ignore
   import dagre from "cytoscape-dagre";
-  import { createEventDispatcher } from "svelte";
 
   let { activities = [] } = $props();
 
   let container;
   let cy;
-  let exportFunction = exportPNG;
-  const dispatch = createEventDispatcher();
 
   $effect(() => {
     if (activities && container) {
@@ -82,14 +79,55 @@
   function exportPNG() {
     if (cy) {
       const pngData = cy.png({ full: true, scale: 2 });
-      dispatch("export", { dataUrl: pngData, filename: "graph.png" });
+      const link = document.createElement("a");
+      link.href = pngData;
+      link.download = "graph.png";
+      link.click();
     }
   }
 </script>
 
-<div bind:this={container} class="graph-container"></div>
+<div class="graph-wrapper">
+  <div class="graph-header">
+    <h3>Graf</h3>
+    <button class="btn-png" onclick={exportPNG} title="Eksportuj wykres do PNG"
+      >📷 PNG</button
+    >
+  </div>
+  <div bind:this={container} class="graph-container"></div>
+</div>
 
 <style>
+  .graph-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .graph-header h3 {
+    margin: 0;
+  }
+
+  .btn-png {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .btn-png:hover {
+    background: #2563eb;
+  }
+
   .graph-container {
     width: 100%;
     height: 500px;

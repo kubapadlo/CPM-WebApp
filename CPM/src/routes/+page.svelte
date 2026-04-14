@@ -5,17 +5,6 @@
   let activities = $state([]);
   let loading = $state(false);
 
-  let graphComponent;
-  let ganttComponent;
-
-  function handleExport(event) {
-    const { dataUrl, filename } = event.detail;
-    const link = document.createElement("a");
-    link.href = dataUrl;
-    link.download = filename;
-    link.click();
-  }
-
   function generateKey() {
     return Math.random().toString(36).substr(2, 9);
   }
@@ -252,27 +241,11 @@
 
   {#if activities.length > 0}
     <div class="card">
-      <div class="card-header">
-        <h2>Graf</h2>
-        <button
-          class="btn-png"
-          onclick={() => graphComponent?.()}
-          title="Eksportuj wykres do PNG">📷 PNG</button
-        >
-      </div>
-      <Graph bind:exportFunction={graphComponent} {activities} />
+      <Graph {activities} />
     </div>
 
     <div class="card">
-      <div class="card-header">
-        <h2>Wykres Gantta</h2>
-        <button
-          class="btn-png"
-          onclick={() => ganttComponent?.()}
-          title="Eksportuj wykres Gantta do PNG">📷 PNG</button
-        >
-      </div>
-      <Gantt bind:exportFunction={ganttComponent} {activities} />
+      <Gantt {activities} />
     </div>
   {/if}
 </div>

@@ -1,10 +1,7 @@
 <script>
   import html2canvas from "html2canvas";
-  import { createEventDispatcher } from "svelte";
 
   let { activities = [] } = $props();
-
-  const dispatch = createEventDispatcher();
 
   /**
    * @param {any} item
@@ -124,21 +121,43 @@
   const chartWidth = $derived(() => (maxEnd() + 1) * timeScale);
 
   let ganttContainer;
-  let exportFunction = exportPNG;
+  let ganttGrid;
 
   function exportPNG() {
-    if (ganttContainer) {
-      html2canvas(ganttContainer, {
+    const target = ganttGrid ?? ganttContainer;
+    if (target) {
+      // Tymczasowo zmień rozmiar kontenera, aby przechwytcić całą zawartość
+      const originalWidth = target.style.width;
+      const originalHeight = target.style.height;
+      const originalOverflow = target.style.overflow;
+      target.style.width = target.scrollWidth + "px";
+      target.style.height = target.scrollHeight + "px";
+      target.style.overflow = "visible";
+
+      html2canvas(target, {
         backgroundColor: "#ffffff",
         scale: 2,
         useCORS: true,
         allowTaint: false,
       })
         .then((canvas) => {
+          // Przywróć oryginalne style
+          target.style.width = originalWidth;
+          target.style.height = originalHeight;
+          target.style.overflow = originalOverflow;
+
           const dataUrl = canvas.toDataURL("image/png");
-          dispatch("export", { dataUrl, filename: "gantt.png" });
+          const link = document.createElement("a");
+          link.href = dataUrl;
+          link.download = "gantt.png";
+          link.click();
         })
         .catch((err) => {
+          // Przywróć oryginalne style w przypadku błędu
+          target.style.width = originalWidth;
+          target.style.height = originalHeight;
+          target.style.overflow = originalOverflow;
+
           console.error("Błąd eksportu PNG:", err);
           alert("Wystąpił błąd podczas eksportu wykresu.");
         });
@@ -146,60 +165,100 @@
   }
 </script>
 
-<div class="gantt" bind:this={ganttContainer}>
-  <div class="gantt-grid" style="position: relative;">
-    <!-- Oś czasu z etykietami co trzecią jednostkę -->
-    <div class="time-axis">
-      {#each timeLabels() as label}
-        <div
-          class="time-label"
-          class:first={label === 0}
-          style="left: {label * timeScale}px"
-        >
-          {label}
+<div class="gantt-wrapper">
+  <div class="gantt-header">
+    <h3>Wykres Gantta</h3>
+    <button
+      class="btn-png"
+      onclick={exportPNG}
+      title="Eksportuj wykres Gantta do PNG">📷 PNG</button
+    >
+  </div>
+  <div class="gantt" bind:this={ganttContainer}>
+    <div class="gantt-grid" bind:this={ganttGrid} style="position: relative;">
+      <!-- Oś czasu z etykietami co trzecią jednostkę -->
+      <div class="time-axis">
+        {#each timeLabels() as label}
+          <div
+            class="time-label"
+            class:first={label === 0}
+            style="left: {label * timeScale}px"
+          >
+            {label}
+          </div>
+        {/each}
+      </div>
+
+      <!-- Linie pionowe dla każdej etykiety czasu -->
+      <svg
+        class="time-lines"
+        width={chartWidth()}
+        height="100%"
+        style="position: absolute; top: 0; left: 0; pointer-events: none;"
+      >
+        {#each timeLabels() as label}
+          <line
+            x1={label * timeScale}
+            y1="30"
+            x2={label * timeScale}
+            y2="100%"
+            stroke="#64748b"
+            stroke-width="1"
+            stroke-dasharray="2,2"
+          />
+        {/each}
+      </svg>
+
+      {#each tasks() as task}
+        <div class="task-row">
+          <div class="task-bar-wrapper" style="min-width: {chartWidth()}px">
+            <div
+              class="task-bar {task.isCritical ? 'critical' : ''}"
+              style="left: {task.start * timeScale}px; width: {task.duration *
+                timeScale -
+                24}px"
+              title="{task.id} — start: {task.start}, czas: {task.duration}, koniec: {task.end}"
+            >
+              {task.id}
+            </div>
+          </div>
         </div>
       {/each}
     </div>
-
-    <!-- Linie pionowe dla każdej etykiety czasu -->
-    <svg
-      class="time-lines"
-      width={chartWidth()}
-      height="100%"
-      style="position: absolute; top: 0; left: 0; pointer-events: none;"
-    >
-      {#each timeLabels() as label}
-        <line
-          x1={label * timeScale}
-          y1="30"
-          x2={label * timeScale}
-          y2="100%"
-          stroke="#64748b"
-          stroke-width="1"
-          stroke-dasharray="2,2"
-        />
-      {/each}
-    </svg>
-
-    {#each tasks() as task}
-      <div class="task-row">
-        <div class="task-bar-wrapper" style="min-width: {chartWidth()}px">
-          <div
-            class="task-bar {task.isCritical ? 'critical' : ''}"
-            style="left: {task.start * timeScale}px; width: {task.duration *
-              timeScale -
-              24}px"
-            title="{task.id} — start: {task.start}, czas: {task.duration}, koniec: {task.end}"
-          >
-            {task.id}
-          </div>
-        </div>
-      </div>
-    {/each}
   </div>
 </div>
 
 <style>
+  .gantt-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .gantt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .gantt-header h3 {
+    margin: 0;
+  }
+
+  .btn-png {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .btn-png:hover {
+    background: #2563eb;
+  }
+
   .gantt {
     display: flex;
     flex-direction: column;

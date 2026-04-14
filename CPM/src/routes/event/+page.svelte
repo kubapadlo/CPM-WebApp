@@ -5,16 +5,6 @@
   let networkData = $state({ events: [], activities: [] });
   let loading = $state(false);
 
-  let graphEventComponent;
-  let ganttEventComponent;
-
-  function handleExport(dataUrl, filename) {
-    const link = document.createElement("a");
-    link.href = dataUrl;
-    link.download = filename;
-    link.click();
-  }
-
   function generateKey() {
     return Math.random().toString(36).substr(2, 9);
   }
@@ -332,36 +322,12 @@
 
   {#if networkData.events.length > 0}
     <div class="card">
-      <div class="card-header">
-        <h2>Graf</h2>
-        <button
-          class="btn-png"
-          onclick={() => graphEventComponent?.exportPNG()}
-          title="Eksportuj wykres do PNG">📷 PNG</button
-        >
-      </div>
-      <GraphEvent
-        bind:this={graphEventComponent}
-        {networkData}
-        exportFunction={handleExport}
-      />
+      <GraphEvent {networkData} />
     </div>
 
     {#if ganttTasks().length > 0}
       <div class="card">
-        <div class="card-header">
-          <h2>Wykres Gantta</h2>
-          <button
-            class="btn-png"
-            onclick={() => ganttEventComponent?.exportPNG()}
-            title="Eksportuj wykres Gantta do PNG">📷 PNG</button
-          >
-        </div>
-        <Gantt
-          bind:this={ganttEventComponent}
-          activities={ganttTasks()}
-          exportFunction={handleExport}
-        />
+        <Gantt activities={ganttTasks()} />
       </div>
     {/if}
   {/if}
