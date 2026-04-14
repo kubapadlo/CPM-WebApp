@@ -46,12 +46,12 @@
         body: JSON.stringify(payload)
       });
       
-      if (!response.ok) throw new Error("Błąd sieci");
+    //   if (!response.ok) throw new Error("Błąd sieci");
       networkData = await response.json();
       
     } catch (e) {
       console.error("Błąd pobierania danych", e);
-      alert("Backend nie odpowiedział. Dane nieprawidłowe.");
+      alert("Dane są nieprawidłowe.");
       
     } finally {
       loading = false;
