@@ -59,7 +59,7 @@
       activities = await response.json();
     } catch (e) {
       console.error("Błąd pobierania danych", e);
-      alert("Wystąpił błąd podczas łączenia z serwerem.");
+      alert("Dane są nieprawidłowe.");
     } finally {
       loading = false;
     }
