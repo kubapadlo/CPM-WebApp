@@ -85,7 +85,7 @@
       networkData = await response.json();
     } catch (e) {
       console.error("Błąd pobierania danych", e);
-      alert("Backend nie odpowiedział. Dane nieprawidłowe.");
+      alert("Dane są nieprawidłowe.");
     } finally {
       loading = false;
     }
@@ -407,6 +407,8 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
   button {
+    font-family: inherit;
+    font-size: inherit;
     cursor: pointer;
     font-weight: 600;
     border: none;

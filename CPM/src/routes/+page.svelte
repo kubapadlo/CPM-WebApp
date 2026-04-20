@@ -56,6 +56,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      if (!response.ok) throw new Error("Błąd sieci");
       activities = await response.json();
     } catch (e) {
       console.error("Błąd pobierania danych", e);
@@ -315,6 +316,17 @@
   }
 
   button {
+    font-family: inherit; /* Wymusza użycie czcionki rodzica (system-ui) */
+  font-size: inherit;
+    cursor: pointer;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  
+  label {
     cursor: pointer;
     font-weight: 600;
     border: none;
@@ -376,6 +388,9 @@
     background: #10b981;
     color: white;
     padding: 10px 16px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
   }
 
   .btn-export:hover {
@@ -387,8 +402,6 @@
     color: white;
     padding: 10px 16px;
     cursor: pointer;
-    font-weight: 600;
-    border: none;
     border-radius: 6px;
     transition: all 0.2s;
   }
